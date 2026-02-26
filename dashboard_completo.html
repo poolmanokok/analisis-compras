@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Análisis de Compras — Oct 2025 · Feb 2026</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --dark: #1B3A5C; --mid: #2E6DA4; --light: #D6E4F0;
+      --accent: #E67E22; --green: #27AE60; --red: #C0392B;
+      --gray: #F4F6F8; --white: #FFFFFF; --text: #2C3E50; --muted: #6B7E8F;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'Segoe UI',Arial,sans-serif; background:#EEF2F7; color:var(--text); }
+
+    header {
+      background:linear-gradient(135deg,var(--dark) 0%,var(--mid) 100%);
+      color:white; padding:40px 40px 30px; position:relative; overflow:hidden;
+    }
+    header::after { content:''; position:absolute; right:-60px; top:-60px; width:300px; height:300px; border-radius:50%; background:rgba(255,255,255,.05); }
+    header::before { content:''; position:absolute; right:80px; bottom:-80px; width:200px; height:200px; border-radius:50%; background:rgba(255,255,255,.04); }
+    .header-inner { max-width:1300px; margin:0 auto; position:relative; z-index:1; }
+    header h1 { font-size:2rem; font-weight:700; letter-spacing:-.5px; }
+    header p  { font-size:1rem; opacity:.8; margin-top:8px; }
+    .header-badge { display:inline-block; background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.25); border-radius:20px; padding:4px 14px; font-size:.8rem; margin-top:14px; backdrop-filter:blur(4px); }
+
+    nav { background:var(--white); border-bottom:3px solid var(--mid); position:sticky; top:0; z-index:100; box-shadow:0 2px 8px rgba(0,0,0,.08); }
+    nav ul { display:flex; list-style:none; max-width:1300px; margin:0 auto; padding:0 40px; flex-wrap:wrap; }
+    nav li a { display:block; padding:14px 18px; font-size:.875rem; font-weight:600; color:var(--muted); text-decoration:none; border-bottom:3px solid transparent; transition:all .2s; margin-bottom:-3px; }
+    nav li a:hover, nav li a.active { color:var(--mid); border-bottom-color:var(--mid); }
+
+    main { max-width:1300px; margin:0 auto; padding:36px 40px; }
+    .section { margin-bottom:48px; }
+    .section-title { font-size:1.25rem; font-weight:700; color:var(--dark); border-left:4px solid var(--mid); padding-left:14px; margin-bottom:22px; }
+    .section-subtitle { font-size:.85rem; color:var(--muted); margin-top:4px; padding-left:18px; font-weight:400; }
+    .page-section { scroll-margin-top:60px; }
+
+    .kpi-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:16px; margin-bottom:36px; }
+    @media(max-width:1100px){ .kpi-grid{grid-template-columns:repeat(3,1fr);} }
+    @media(max-width:600px){ .kpi-grid{grid-template-columns:repeat(2,1fr);} }
+    .kpi-card { background:var(--white); border-radius:14px; padding:22px 18px; box-shadow:0 2px 12px rgba(0,0,0,.06); border-top:4px solid var(--mid); transition:transform .15s,box-shadow .15s; }
+    .kpi-card:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(0,0,0,.1); }
+    .kpi-card.accent{border-top-color:var(--accent);} .kpi-card.green{border-top-color:var(--green);}
+    .kpi-card.red{border-top-color:var(--red);} .kpi-card.dark{border-top-color:var(--dark);}
+    .kpi-card.purple{border-top-color:#8E44AD;}
+    .kpi-icon{font-size:1.6rem;margin-bottom:8px;}
+    .kpi-value{font-size:2rem;font-weight:800;color:var(--dark);line-height:1;}
+    .kpi-label{font-size:.78rem;color:var(--muted);margin-top:6px;font-weight:500;}
+
+    .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+    @media(max-width:900px){.grid-2{grid-template-columns:1fr;}}
+    .grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:24px; }
+    @media(max-width:1000px){.grid-3{grid-template-columns:1fr 1fr;}}
+    @media(max-width:600px){.grid-3{grid-template-columns:1fr;}}
+
+    .card { background:var(--white); border-radius:14px; padding:24px; box-shadow:0 2px 12px rgba(0,0,0,.06); }
+    .card h3 { font-size:1rem; font-weight:700; color:var(--dark); margin-bottom:18px; }
+    .chart-wrap { position:relative; height:300px; }
+    .chart-wrap.tall { height:400px; }
+
+    .table-wrap { overflow-x:auto; border-radius:12px; }
+    table { width:100%; border-collapse:collapse; font-size:.85rem; }
+    thead th { background:var(--dark); color:white; padding:12px 14px; text-align:left; font-weight:600; white-space:nowrap; }
+    tbody tr { border-bottom:1px solid #E8EDF2; transition:background .1s; }
+    tbody tr:hover { background:var(--light); }
+    tbody td { padding:11px 14px; vertical-align:middle; }
+    .tag { display:inline-block; border-radius:20px; padding:2px 10px; font-size:.75rem; font-weight:600; }
+    .tag-blue{background:var(--light);color:var(--dark);} .tag-orange{background:#FEF0E6;color:var(--accent);}
+    .tag-red{background:#FDEDEC;color:var(--red);} .tag-green{background:#EAFAF1;color:var(--green);}
+    .badge-num { display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; border-radius:50%; background:var(--dark); color:white; font-size:.75rem; font-weight:700; }
+    .bar-inline{display:flex;align-items:center;gap:8px;}
+    .bar-bg{flex:1;height:8px;background:#E8EDF2;border-radius:4px;overflow:hidden;}
+    .bar-fill{height:100%;background:var(--mid);border-radius:4px;transition:width .4s;}
+    .bar-fill.orange{background:var(--accent);} .bar-fill.red{background:var(--red);}
+
+    .rec-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;}
+    @media(max-width:800px){.rec-grid{grid-template-columns:1fr;}}
+    .rec-card{display:flex;gap:14px;align-items:flex-start;background:var(--white);border-radius:12px;padding:18px;box-shadow:0 2px 8px rgba(0,0,0,.05);border-left:4px solid var(--mid);}
+    .rec-card.high{border-left-color:var(--red);} .rec-card.med{border-left-color:var(--accent);}
+    .rec-icon{font-size:1.5rem;flex-shrink:0;margin-top:2px;}
+    .rec-title{font-size:.9rem;font-weight:700;color:var(--dark);margin-bottom:5px;}
+    .rec-desc{font-size:.82rem;color:var(--muted);line-height:1.5;}
+    .rec-impact{display:inline-block;margin-top:8px;font-size:.75rem;font-weight:700;padding:2px 10px;border-radius:20px;background:#EAFAF1;color:var(--green);}
+    .rec-impact.high{background:#FDEDEC;color:var(--red);} .rec-impact.med{background:#FEF0E6;color:var(--accent);}
+
+    footer { text-align:center; padding:28px; font-size:.8rem; color:var(--muted); border-top:1px solid #DDE3EA; margin-top:20px; background:var(--white); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <h1>📊 Análisis de Compras — Consolidación de Proveedores</h1>
+    <p>Matriz de partes compradas · Octubre 2025 – Febrero 2026</p>
+    <span class="header-badge">🗂️ 5,378 líneas · 551 proveedores · 105 clientes · 3,159 órdenes</span>
+  </div>
+</header>
+
+<nav>
+  <ul>
+    <li><a href="#resumen" class="active">Resumen Ejecutivo</a></li>
+    <li><a href="#proveedores">Proveedores</a></li>
+    <li><a href="#repetitivas">Partes Repetitivas</a></li>
+    <li><a href="#clientes">Clientes</a></li>
+    <li><a href="#recomendaciones">Recomendaciones</a></li>
+  </ul>
+</nav>
+
+<main>
+
+  <!-- ===== RESUMEN EJECUTIVO ===== -->
+  <section class="section page-section" id="resumen">
+    <div class="section-title">
+      🏆 Resumen Ejecutivo
+      <div class="section-subtitle">Período: Octubre 2025 – Febrero 2026</div>
+    </div>
+    <div class="kpi-grid">
+      <div class="kpi-card dark"><div class="kpi-icon">📦</div><div class="kpi-value">5,378</div><div class="kpi-label">Total Líneas de Compra</div></div>
+      <div class="kpi-card accent"><div class="kpi-icon">🏭</div><div class="kpi-value">551</div><div class="kpi-label">Proveedores Activos</div></div>
+      <div class="kpi-card"><div class="kpi-icon">📄</div><div class="kpi-value">3,159</div><div class="kpi-label">Órdenes de Compra</div></div>
+      <div class="kpi-card green"><div class="kpi-icon">🏢</div><div class="kpi-value">105</div><div class="kpi-label">Clientes Servidos</div></div>
+      <div class="kpi-card red"><div class="kpi-icon">🔁</div><div class="kpi-value">512</div><div class="kpi-label">Partes Repetitivas</div></div>
+      <div class="kpi-card purple"><div class="kpi-icon">⚡</div><div class="kpi-value">47.1%</div><div class="kpi-label">Top 5 Prov. (% líneas)</div></div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <h3>📈 Líneas de Compra por Mes</h3>
+        <div class="chart-wrap"><canvas id="chartMonthly"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>🥧 Concentración — Top 5 Proveedores vs Resto</h3>
+        <div class="chart-wrap"><canvas id="chartPie"></canvas></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== PROVEEDORES ===== -->
+  <section class="section page-section" id="proveedores">
+    <div class="section-title">
+      🏭 Análisis por Proveedor
+      <div class="section-subtitle">Ranking por número de líneas · 551 proveedores activos en el período</div>
+    </div>
+    <div class="card" style="margin-bottom:24px">
+      <h3>📊 Top 15 Proveedores por Líneas Compradas</h3>
+      <div class="chart-wrap tall"><canvas id="chartBarProv"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>📋 Detalle Top 15 Proveedores</h3>
+      <div class="table-wrap">
+        <table id="tableProv">
+          <thead>
+            <tr><th>#</th><th>Proveedor</th><th>Líneas</th><th>% Total</th><th>Órdenes</th><th>Clientes</th><th>Total USD</th><th>Total MXN</th><th>Categoría</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== PARTES REPETITIVAS ===== -->
+  <section class="section page-section" id="repetitivas">
+    <div class="section-title">
+      🔁 Partes Compradas Repetitivamente
+      <div class="section-subtitle">512 partes compradas más de una vez · Oportunidad de estandarización y volumen</div>
+    </div>
+    <div class="grid-3" style="margin-bottom:24px">
+      <div class="card">
+        <h3>🎯 Con 1 Proveedor</h3>
+        <div style="text-align:center;padding:10px 0">
+          <div style="font-size:2.5rem;font-weight:800;color:var(--green)">413</div>
+          <div style="color:var(--muted);font-size:.85rem;margin-top:6px">Partes con proveedor único</div>
+          <div style="color:var(--muted);font-size:.8rem;margin-top:4px">Ya consolidadas — mantener</div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>⚠️ Con 2 Proveedores</h3>
+        <div style="text-align:center;padding:10px 0">
+          <div style="font-size:2.5rem;font-weight:800;color:var(--accent)">86</div>
+          <div style="color:var(--muted);font-size:.85rem;margin-top:6px">Partes con 2 proveedores</div>
+          <div style="color:var(--muted);font-size:.8rem;margin-top:4px">Oportunidad de consolidar</div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>🚨 Con 3+ Proveedores</h3>
+        <div style="text-align:center;padding:10px 0">
+          <div style="font-size:2.5rem;font-weight:800;color:var(--red)">13</div>
+          <div style="color:var(--muted);font-size:.85rem;margin-top:6px">Partes con 3+ proveedores</div>
+          <div style="color:var(--muted);font-size:.8rem;margin-top:4px">Prioridad alta — estandarizar</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>🔢 Top 20 Partes Más Repetidas</h3>
+      <div class="table-wrap">
+        <table id="tablePartes">
+          <thead>
+            <tr><th>#</th><th>No. Parte</th><th>Descripción</th><th>Veces Comprada</th><th>Provs. Distintos</th><th>Acción Sugerida</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== CLIENTES ===== -->
+  <section class="section page-section" id="clientes">
+    <div class="section-title">
+      🏢 Análisis por Cliente
+      <div class="section-subtitle">105 clientes activos en el período · Distribución de órdenes y proveedores</div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <h3>📊 Top 10 Clientes por Líneas</h3>
+        <div class="chart-wrap tall"><canvas id="chartClientes"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>📋 Detalle Top 10 Clientes</h3>
+        <div class="table-wrap" style="max-height:400px;overflow-y:auto">
+          <table id="tableClientes">
+            <thead><tr><th>#</th><th>Cliente</th><th>Líneas</th><th>Provs.</th><th>%</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== RECOMENDACIONES ===== -->
+  <section class="section page-section" id="recomendaciones">
+    <div class="section-title">
+      💡 Recomendaciones Estratégicas
+      <div class="section-subtitle">Plan de consolidación basado en datos · Objetivo: reducir de 551 a ~50 proveedores clave</div>
+    </div>
+    <div class="rec-grid">
+      <div class="rec-card high">
+        <div class="rec-icon">🔗</div>
+        <div>
+          <div class="rec-title">1. Unificar AMAZON + AMAZON ONLINE</div>
+          <div class="rec-desc">Se detectó el mismo proveedor con dos nombres distintos. Total combinado: <strong>941 líneas (17.5% del total)</strong>. Consolidar bajo un único contrato marco mejora visibilidad y poder de negociación inmediatamente.</div>
+          <span class="rec-impact high">🔴 Impacto Alto · Acción Inmediata</span>
+        </div>
+      </div>
+      <div class="rec-card high">
+        <div class="rec-icon">🏭</div>
+        <div>
+          <div class="rec-title">2. Contrato Marco con McMaster-Carr</div>
+          <div class="rec-desc"><strong>607 líneas en 34 clientes</strong>. Es el proveedor técnico con mayor alcance. Negociar acuerdo anual de distribuidor preferente para refacciones industriales con descuentos por volumen del 15-20%.</div>
+          <span class="rec-impact high">🔴 Impacto Alto · Negociar en Q1</span>
+        </div>
+      </div>
+      <div class="rec-card med">
+        <div class="rec-icon">🔄</div>
+        <div>
+          <div class="rec-title">3. Migrar eBay + Mercado Libre a Distribuidores</div>
+          <div class="rec-desc"><strong>338 líneas combinadas</strong> en plataformas C2C (eBay 193 + Mercado Libre 145). Alto riesgo en calidad, trazabilidad y garantías. Migrar a distribuidores certificados para las familias de partes identificadas.</div>
+          <span class="rec-impact med">🟠 Impacto Medio · Plan 3-6 meses</span>
+        </div>
+      </div>
+      <div class="rec-card med">
+        <div class="rec-icon">📋</div>
+        <div>
+          <div class="rec-title">4. Contratos Anuales: Zoro Tools + Digi-Key</div>
+          <div class="rec-desc"><strong>382 y 323 líneas</strong> respectivamente con alta dispersión de clientes (45 y 20 clientes). Negociar contratos marco anuales con targets de volumen para obtener precios preferentes y tiempos de entrega garantizados.</div>
+          <span class="rec-impact med">🟠 Impacto Medio · Q1-Q2</span>
+        </div>
+      </div>
+      <div class="rec-card">
+        <div class="rec-icon">🔍</div>
+        <div>
+          <div class="rec-title">5. Auditar 13 Partes con 3+ Proveedores</div>
+          <div class="rec-desc"><strong>13 partes</strong> se compran a 3 o más proveedores distintos sin aparente justificación técnica. Estandarizar proveedor único por parte, eliminar duplicidades en catálogo y negociar precio preferencial por consolidación de volumen.</div>
+          <span class="rec-impact">🟢 Eficiencia Operativa</span>
+        </div>
+      </div>
+      <div class="rec-card">
+        <div class="rec-icon">🤝</div>
+        <div>
+          <div class="rec-title">6. Certificar JyC Plomería Local</div>
+          <div class="rec-desc"><strong>367 líneas, 13 clientes</strong>. Proveedor local de alta frecuencia. Auditar capacidad instalada y certificaciones. Si cumple estándares, negociar contrato preferencial que consolide más compras locales y reduzca tiempos logísticos.</div>
+          <span class="rec-impact">🟢 Ahorro Logístico</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:28px">
+      <h3>🗺️ Roadmap de Consolidación — Meta: 551 → ~50 Proveedores Estratégicos</h3>
+      <div style="margin-top:16px;display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
+        <div style="background:#FDEDEC;border-radius:10px;padding:18px;border-top:3px solid var(--red)">
+          <div style="font-weight:700;color:var(--red);margin-bottom:8px">🔴 Fase 1 — Q1 2026 (Inmediato)</div>
+          <ul style="font-size:.83rem;color:var(--text);padding-left:16px;line-height:1.8">
+            <li>Unificar Amazon / Amazon Online</li>
+            <li>Firmar contrato McMaster-Carr</li>
+            <li>Auditar 13 partes multi-proveedor</li>
+            <li>Bloquear compras en eBay sin aprobación</li>
+          </ul>
+        </div>
+        <div style="background:#FEF0E6;border-radius:10px;padding:18px;border-top:3px solid var(--accent)">
+          <div style="font-weight:700;color:var(--accent);margin-bottom:8px">🟠 Fase 2 — Q2 2026 (Corto plazo)</div>
+          <ul style="font-size:.83rem;color:var(--text);padding-left:16px;line-height:1.8">
+            <li>Contratos anuales Zoro + Digi-Key</li>
+            <li>Auditoría JyC Plomería local</li>
+            <li>Catálogo único de partes estandarizado</li>
+            <li>Reducción a ~150 proveedores activos</li>
+          </ul>
+        </div>
+        <div style="background:#EAFAF1;border-radius:10px;padding:18px;border-top:3px solid var(--green)">
+          <div style="font-weight:700;color:var(--green);margin-bottom:8px">🟢 Fase 3 — Q3-Q4 2026 (Consolidación)</div>
+          <ul style="font-size:.83rem;color:var(--text);padding-left:16px;line-height:1.8">
+            <li>Proveedores estratégicos calificados (~50)</li>
+            <li>Programa SRM (Supplier Relationship Mgmt.)</li>
+            <li>Revisiones semestrales de desempeño</li>
+            <li>Meta: 20-30% ahorro en costo de adquisición</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <strong>Análisis de Compras · Oct 2025 – Feb 2026</strong> &nbsp;|&nbsp;
+  Datos: 5,378 líneas · 551 proveedores · 105 clientes · 3,159 órdenes
+</footer>
+
+<script>
+// ========== DATOS REALES ==========
+const provData = [
+  { name:'AMAZON', lineas:854, ordenes:586, clientes:54, usd:53637.30, mxn:0, pct:15.88 },
+  { name:'MCMASTER-CARR', lineas:607, ordenes:227, clientes:34, usd:33085.45, mxn:0, pct:11.29 },
+  { name:'ZORO TOOLS INC', lineas:382, ordenes:266, clientes:45, usd:36986.31, mxn:0, pct:7.10 },
+  { name:'JYC PLOMERÍA Y ELECT.', lineas:367, ordenes:52, clientes:13, usd:0, mxn:73627.05, pct:6.82 },
+  { name:'DIGI-KEY', lineas:323, ordenes:76, clientes:20, usd:9997.10, mxn:0, pct:6.01 },
+  { name:'EBAY', lineas:193, ordenes:174, clientes:41, usd:19907.50, mxn:0, pct:3.59 },
+  { name:'MERCADO LIBRE', lineas:145, ordenes:119, clientes:36, usd:0, mxn:191431.85, pct:2.70 },
+  { name:'J.G. SANTILLANES', lineas:98, ordenes:41, clientes:16, usd:0, mxn:6863.34, pct:1.82 },
+  { name:'U-LINE MEXICO', lineas:97, ordenes:68, clientes:11, usd:18655.72, mxn:1765.00, pct:1.80 },
+  { name:'AMAZON ONLINE', lineas:87, ordenes:67, clientes:24, usd:0, mxn:112394.04, pct:1.62 },
+  { name:'MSC INDUSTRIAL', lineas:77, ordenes:43, clientes:18, usd:2310.65, mxn:0, pct:1.43 },
+  { name:'CLIPS MART', lineas:72, ordenes:12, clientes:5, usd:434.63, mxn:0, pct:1.34 },
+  { name:'XPRESS INDUSTRIAL', lineas:69, ordenes:32, clientes:14, usd:5922.54, mxn:883454.80, pct:1.28 },
+  { name:'MOUSER', lineas:60, ordenes:43, clientes:21, usd:7573.01, mxn:0, pct:1.12 },
+  { name:'HOME DEPOT MEXICO', lineas:57, ordenes:45, clientes:20, usd:0, mxn:51281.94, pct:1.06 }
+];
+
+const monthlyData = [
+  {month:'Oct 25', lineas:1338},
+  {month:'Nov 25', lineas:1188},
+  {month:'Dic 25', lineas:936},
+  {month:'Ene 26', lineas:1130},
+  {month:'Feb 26', lineas:786}
+];
+
+const partesData = [
+  {parte:'MTC-21', desc:'Pinzas de corte diagonal PVC 125mm', veces:17, provs:1},
+  {parte:'D50S.012020', desc:'Filtros plegadizos para aire 20x20x1 MERV 8', veces:11, provs:1},
+  {parte:'66111', desc:'Lubricante WD-40 de 11 oz', veces:11, provs:1},
+  {parte:'1570BN', desc:"Crescent Wiss 4-3/4' Quick Clip Sharp Point Nippers", veces:10, provs:2},
+  {parte:'56591191', desc:'ISCAR Torx Cap Screw indexable milling M2.5', veces:10, provs:1},
+  {parte:'D50S.011620', desc:"Filtro Perfect Pleat HC MERV 8 16'X20'X1'", veces:10, provs:1},
+  {parte:'4527T7', desc:'Botella de lavado pico estándar 16 oz verde', veces:9, provs:1},
+  {parte:'ST18M1003X', desc:'Keson cinta métrica 100 ft / 30m', veces:8, provs:1},
+  {parte:'ENVIO', desc:'Costo de envío', veces:8, provs:3},
+  {parte:'SAN16003', desc:'Marcador Expo Vis-A-Vis fino para acetato azul', veces:7, provs:4},
+  {parte:'AGQ200A24Z', desc:'Panasonic Relay Telecom DPDT 2A 24V', veces:6, provs:3},
+  {parte:'G330341', desc:'Jeringa plástica Luer Lock 3ml/cc', veces:6, provs:1},
+  {parte:'MC006A', desc:"Cortadores de compuerta 4-1/2' acero inox", veces:6, provs:1},
+  {parte:'12352', desc:'Mini raspador con navaja de 1 1/2', veces:6, provs:2},
+  {parte:'DWHT1105', desc:'Navajas de gancho Dewalt paquete 50 pzs', veces:5, provs:1},
+  {parte:'FILTRO-10 MICRON', desc:'Filtro para agua 10 micrones caja /50', veces:5, provs:1},
+  {parte:'44320', desc:'Cincho plástico 18 lbs 100mm negro', veces:5, provs:1},
+  {parte:'21532', desc:"Brocha con mango de plástico 1/2' Pretul", veces:5, provs:1},
+  {parte:'TE05-091C', desc:'Techni Edge razor blade single edge 100pk', veces:5, provs:1},
+  {parte:'WMRWB-0421', desc:'Termo acero inoxidable 22oz varios colores', veces:5, provs:1}
+];
+
+const clientesData = [
+  {name:'TELEFLEX MEDICAL DE TECATE', lineas:431, provs:78, pct:8.01},
+  {name:'FISHER & PAYKEL HEALTHCARE', lineas:346, provs:31, pct:6.43},
+  {name:'GREATBATCH MEDICAL', lineas:332, provs:51, pct:6.17},
+  {name:'EATON INDUSTRIES', lineas:328, provs:63, pct:6.10},
+  {name:'LUXSHARE PRECISION MEXICO', lineas:308, provs:27, pct:5.73},
+  {name:'NPA DE MEXICO', lineas:282, provs:73, pct:5.24},
+  {name:'WELCH ALLYN DE MEXICO', lineas:241, provs:53, pct:4.48},
+  {name:'HEATTRAK DE MEXICO', lineas:227, provs:35, pct:4.22},
+  {name:'TURBO TECNOLOGIA', lineas:217, provs:28, pct:4.03},
+  {name:'FOXCONN BAJA CALIFORNIA', lineas:187, provs:35, pct:3.48}
+];
+
+const totalLineas = 5378;
+const DARK='#1B3A5C', MID='#2E6DA4', ACCENT='#E67E22', GREEN='#27AE60', RED='#C0392B';
+
+// ======== GRÁFICA MENSUAL ========
+new Chart(document.getElementById('chartMonthly'), {
+  type:'bar',
+  data:{
+    labels: monthlyData.map(d=>d.month),
+    datasets:[{
+      label:'Líneas de Compra',
+      data: monthlyData.map(d=>d.lineas),
+      backgroundColor:[MID, MID, '#8E44AD', MID, ACCENT],
+      borderRadius:6
+    }]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    plugins:{
+      legend:{display:false},
+      tooltip:{callbacks:{label:ctx=>' '+ctx.parsed.y.toLocaleString()+' líneas'}}
+    },
+    scales:{
+      y:{beginAtZero:true, grid:{color:'#F0F4F8'},
+         ticks:{callback:v=>v.toLocaleString()}},
+      x:{grid:{display:false}}
+    }
+  }
+});
+
+// ======== PIE CONCENTRACIÓN ========
+const top5Lines = provData.slice(0,5).reduce((s,d)=>s+d.lineas,0);
+const rest = totalLineas - top5Lines;
+new Chart(document.getElementById('chartPie'), {
+  type:'doughnut',
+  data:{
+    labels:[...provData.slice(0,5).map(d=>d.name), 'Resto (546 proveedores)'],
+    datasets:[{
+      data:[...provData.slice(0,5).map(d=>d.lineas), rest],
+      backgroundColor:[DARK, MID, ACCENT, GREEN, '#8E44AD', '#BDC3C7'],
+      borderWidth:2, borderColor:'#FFFFFF'
+    }]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    plugins:{
+      legend:{position:'right', labels:{font:{size:11}, boxWidth:14}},
+      tooltip:{callbacks:{label:ctx=>' '+ctx.parsed.toLocaleString()+' líneas ('+((ctx.parsed/totalLineas*100).toFixed(1))+'%)'}}
+    }
+  }
+});
+
+// ======== BARRAS PROVEEDORES ========
+new Chart(document.getElementById('chartBarProv'), {
+  type:'bar',
+  data:{
+    labels: provData.map(d=>d.name),
+    datasets:[{
+      label:'Líneas',
+      data: provData.map(d=>d.lineas),
+      backgroundColor: provData.map((_,i)=>i<5?DARK:i<10?MID:'#A8C8E8'),
+      borderRadius:5
+    }]
+  },
+  options:{
+    indexAxis:'y',
+    responsive:true, maintainAspectRatio:false,
+    plugins:{
+      legend:{display:false},
+      tooltip:{callbacks:{label:ctx=>' '+ctx.parsed.x.toLocaleString()+' líneas'}}
+    },
+    scales:{
+      x:{beginAtZero:true, grid:{color:'#F0F4F8'}, ticks:{callback:v=>v.toLocaleString()}},
+      y:{grid:{display:false}, ticks:{font:{size:11}}}
+    }
+  }
+});
+
+// ======== BARRAS CLIENTES ========
+new Chart(document.getElementById('chartClientes'), {
+  type:'bar',
+  data:{
+    labels: clientesData.map(d=>d.name),
+    datasets:[{
+      label:'Líneas',
+      data: clientesData.map(d=>d.lineas),
+      backgroundColor: clientesData.map((_,i)=>i<3?DARK:i<6?MID:'#A8C8E8'),
+      borderRadius:5
+    }]
+  },
+  options:{
+    indexAxis:'y',
+    responsive:true, maintainAspectRatio:false,
+    plugins:{
+      legend:{display:false},
+      tooltip:{callbacks:{label:ctx=>' '+ctx.parsed.x.toLocaleString()+' líneas'}}
+    },
+    scales:{
+      x:{beginAtZero:true, grid:{color:'#F0F4F8'}, ticks:{callback:v=>v.toLocaleString()}},
+      y:{grid:{display:false}, ticks:{font:{size:10}}}
+    }
+  }
+});
+
+// ======== TABLA PROVEEDORES ========
+const provTbody = document.querySelector('#tableProv tbody');
+const maxL = provData[0].lineas;
+provData.forEach((d,i)=>{
+  let cat='', cls='tag-blue';
+  if(d.name.includes('AMAZON')||d.name.includes('EBAY')||d.name.includes('MERCADO')){cat='Marketplace';cls='tag-orange';}
+  else if(d.name.includes('MCMASTER')||d.name.includes('ZORO')||d.name.includes('MSC')||d.name.includes('XPRESS')){cat='Industrial';cls='tag-blue';}
+  else if(d.name.includes('DIGI')||d.name.includes('MOUSER')){cat='Electrónica';cls='tag-blue';}
+  else if(d.name.includes('HOME DEPOT')){cat='Retail';cls='tag-orange';}
+  else{cat='Especializado';cls='tag-green';}
+  const barW=Math.round(d.lineas/maxL*100);
+  const barCls=i<2?'':i<5?'orange':'red';
+  const usdStr=d.usd>0?'$'+d.usd.toLocaleString('en',{minimumFractionDigits:0,maximumFractionDigits:0}):'—';
+  const mxnStr=d.mxn>0?'$'+d.mxn.toLocaleString('es-MX',{minimumFractionDigits:0,maximumFractionDigits:0}):'—';
+  provTbody.innerHTML+=`
+    <tr>
+      <td><span class="badge-num">${i+1}</span></td>
+      <td><strong>${d.name}</strong></td>
+      <td style="text-align:right"><strong>${d.lineas.toLocaleString()}</strong></td>
+      <td style="min-width:130px">
+        <div class="bar-inline">
+          <div class="bar-bg"><div class="bar-fill ${barCls}" style="width:${barW}%"></div></div>
+          <span style="font-size:.8rem;color:#666;min-width:42px">${d.pct}%</span>
+        </div>
+      </td>
+      <td style="text-align:right">${d.ordenes.toLocaleString()}</td>
+      <td style="text-align:right">${d.clientes}</td>
+      <td style="text-align:right;font-size:.82rem">${usdStr}</td>
+      <td style="text-align:right;font-size:.82rem">${mxnStr}</td>
+      <td><span class="tag ${cls}">${cat}</span></td>
+    </tr>`;
+});
+
+// ======== TABLA PARTES ========
+const partesTbody = document.querySelector('#tablePartes tbody');
+partesData.forEach((d,i)=>{
+  let accion='', accCls='';
+  if(d.provs>=3){accion='🚨 Estandarizar urgente';accCls='tag-red';}
+  else if(d.provs===2){accion='⚠️ Consolidar';accCls='tag-orange';}
+  else{accion='✅ Mantener';accCls='tag-green';}
+  const vecColor=d.veces>=10?RED:d.veces>=7?ACCENT:MID;
+  partesTbody.innerHTML+=`
+    <tr>
+      <td>${i+1}</td>
+      <td><strong>${d.parte}</strong></td>
+      <td style="font-size:.82rem">${d.desc}</td>
+      <td style="text-align:center"><strong style="color:${vecColor}">${d.veces}</strong></td>
+      <td style="text-align:center"><strong>${d.provs}</strong></td>
+      <td><span class="tag ${accCls}">${accion}</span></td>
+    </tr>`;
+});
+
+// ======== TABLA CLIENTES ========
+const clientesTbody = document.querySelector('#tableClientes tbody');
+clientesData.forEach((d,i)=>{
+  clientesTbody.innerHTML+=`
+    <tr>
+      <td>${i+1}</td>
+      <td style="font-size:.82rem">${d.name}</td>
+      <td style="text-align:right"><strong>${d.lineas.toLocaleString()}</strong></td>
+      <td style="text-align:right">${d.provs}</td>
+      <td style="text-align:right">${d.pct}%</td>
+    </tr>`;
+});
+
+// ======== NAV SCROLLSPY ========
+const sections=document.querySelectorAll('.page-section');
+const navLinks=document.querySelectorAll('nav a');
+window.addEventListener('scroll',()=>{
+  let cur='';
+  sections.forEach(s=>{if(window.scrollY>=s.offsetTop-80)cur=s.id;});
+  navLinks.forEach(a=>a.classList.toggle('active',a.getAttribute('href')==='#'+cur));
+});
+navLinks.forEach(a=>{
+  a.addEventListener('click',e=>{
+    e.preventDefault();
+    document.querySelector(a.getAttribute('href')).scrollIntoView({behavior:'smooth'});
+  });
+});
+</script>
+</body>
+</html>
